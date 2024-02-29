@@ -14,6 +14,7 @@ const Login = () => {
     });
     const [errors , setErrors] = useState({});
     const [touched , setTouched] = useState({});
+    const [token, setToken] = useState(null);
 
 
     useEffect(() => {
@@ -42,6 +43,28 @@ const Login = () => {
         }
     }
 
+    const postDataLogin = async () => {
+        try {
+            const response = await fetch(`http://localhost:8080/v1/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ "username": data.email, "password": data.password }),
+            })
+            console.log(response)
+            if (response.ok) {
+                const responseData = await response.json();
+                const jwtToken = responseData.token;
+                setToken(jwtToken);
+                localStorage.setItem('authToken', jwtToken);
+                window.location.href = '/dashboard';
+            } else {
+                setErrors('Invalid credentials');
+            }
+
+        } catch (error) {
+            console.error('Error posting data:', error);
+        }
+    };
 
     return (
         <div className={styles.container}>
@@ -59,7 +82,7 @@ const Login = () => {
                 </div>
                 <div className={styles.formButtons}>
                 <Link to='/signup'>Signup</Link>                   
-                    <button type="submit">Login</button>
+                    <button onClick={postDataLogin} type="submit">Login</button>
                 </div>
             </form>
             <ToastContainer />
