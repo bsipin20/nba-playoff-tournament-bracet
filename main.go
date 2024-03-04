@@ -67,22 +67,23 @@ type UserDBRecord struct {
 	UserId string
 	Name string
 	Password string
+	Email string
 }
 
-func getUsers(email string) {
+func getUsers(email string) *UserDBRecord {
 	users := []UserDBRecord{
 		{
-			UserID: "1",
+			UserId: "1",
 			Name: "Brian Sip",
 			Email: "bsipin@gmail.com",
-			Password: "password123"
+			Password: "password123",
 		},
 		{
 			UserId: "2",
 			Name: "Frina",
 			Email: "frinalin@gmail.com",
-			Password: "password"
-		}
+			Password: "password",
+		},
 	}
 	for _, user := range users {
 		if user.Email == email {
@@ -171,8 +172,7 @@ func bracketHandler(w http.ResponseWriter, r *http.Request) {
 func generateJWT(username string) (string, error) {
 	claims := CustomClaims{
 		Username: username,
-		UserId
-
+		UserId: 1,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
 			IssuedAt: time.Now().Unix(),
