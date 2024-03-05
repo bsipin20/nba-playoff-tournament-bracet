@@ -7,8 +7,7 @@ import (
 	"net/http"
 	"time"
 	"strings"
-
-        "github.com/dgrijalva/jwt-go"
+    "github.com/dgrijalva/jwt-go"
 	"github.com/rs/cors"
 )
 
