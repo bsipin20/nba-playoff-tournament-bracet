@@ -68,7 +68,7 @@ type UserDBRecord struct {
 	Email string
 }
 
-var users = []UserDBRecord{
+var GlobalUsers = []UserDBRecord{
 	{
 		UserId: "1",
 		Name: "Brian Sip",
@@ -84,7 +84,7 @@ var users = []UserDBRecord{
 }
 
 func getUserById(userId string) *UserDBRecord {
-	for _, user := range users {
+	for _, user := range GlobalUsers {
 		if user.UserId == userId {
 			return &user
 		}
@@ -93,21 +93,7 @@ func getUserById(userId string) *UserDBRecord {
 }
 
 func getUsersByEmail(email string) *UserDBRecord {
-	users := []UserDBRecord{
-		{
-			UserId: "1",
-			Name: "Brian Sip",
-			Email: "bsipin@gmail.com",
-			Password: "password123",
-		},
-		{
-			UserId: "2",
-			Name: "Frina",
-			Email: "frinalin@gmail.com",
-			Password: "password",
-		},
-	}
-	for _, user := range users {
+	for _, user := range GlobalUsers {
 		if user.Email == email {
 			return &user
 		}
@@ -121,28 +107,33 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user UserLogin
-	err := json.NewDecoder(r.Body).Decode(&user)
+	var loginInfo UserLogin
+	err := json.NewDecoder(r.Body).Decode(&loginInfo)
 	if err != nil {
 		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
 		return
 	}
-	log.Printf("Request %+v", user)
+	log.Printf("Request %+v", loginInfo.Username)
 
-	if user.Username != "testuser@gmail.com" || user.Password != "testpassword" {
-		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
-		return
+	//if loginInfo.Username != "testuser@gmail.com" || loginInfo.Password != "testpassword" {
+   	//	http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+    // 	return
+	//}
+	user := getUsersByEmail(loginInfo.Username)
+
+	if user == nil {
+		fmt.Fprint(w, "User not found")
 	}
 
-	token, err := generateJWT(user.Username)
+	token, err := generateJWT(user.UserId)
 
-	if err != nil {
-		http.Error(w, "Error generating JWT token", http.StatusInternalServerError)
-		return
-	}
+	//if err != nil {
+    //		http.Error(w, "Error generating JWT token", http.StatusInternalServerError)
+// 		return
+//}
 	log.Printf("Token: %+v", token)
 
-	w.WriteHeader(http.StatusOK)
+    w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, `{"token": "%s"}`, token)
 }
 
