@@ -1,6 +1,5 @@
 package main
 
-
 import (
 	"encoding/json"
 	"fmt"
@@ -38,7 +37,6 @@ func main() {
 	mux.HandleFunc("/v1/login", loginHandler)
 	mux.HandleFunc("/v1/brackets", bracketHandler)
 
-
 	handler := cors.Default().Handler(mux)
 
 	fmt.Println("Server is listening on :8080")
@@ -70,7 +68,31 @@ type UserDBRecord struct {
 	Email string
 }
 
-func getUsers(email string) *UserDBRecord {
+var users = []UserDBRecord{
+	{
+		UserId: "1",
+		Name: "Brian Sip",
+		Password: "password123",
+		Email: "bsipin@gmail.com",
+	},
+	{
+		UserId: "2",
+		Name: "Frina",
+		Password: "password",
+		Email: "frina.lin@gmail.com",
+	},
+}
+
+func getUserById(userId string) *UserDBRecord {
+	for _, user := range users {
+		if user.UserId == userId {
+			return &user
+		}
+	}
+	return nil
+}
+
+func getUsersByEmail(email string) *UserDBRecord {
 	users := []UserDBRecord{
 		{
 			UserId: "1",
@@ -93,7 +115,6 @@ func getUsers(email string) *UserDBRecord {
 	return nil
 }
 			
-
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
