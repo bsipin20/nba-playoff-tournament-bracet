@@ -56,6 +56,7 @@ const Login = () => {
                 const jwtToken = responseData.token;
                 setToken(jwtToken);
                 localStorage.setItem('authToken', jwtToken);
+				localStorage.setItem('userId', responseData.userId);
                 window.location.href = '/dashboard';
             } else {
                 setErrors('Invalid credentials');

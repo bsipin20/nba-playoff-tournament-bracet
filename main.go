@@ -32,10 +32,9 @@ type CustomClaims struct {
 }
 
 func main() {
-	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/signup", signUpHandler)
 	mux.HandleFunc("/v1/login", loginHandler)
-	mux.HandleFunc("/v1/brackets", bracketHandler)
+	mux.HandleFunc("/v1/brackets/{id}", bracketHandler)
 
 	handler := cors.Default().Handler(mux)
 
@@ -134,7 +133,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Token: %+v", token)
 
     w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, `{"token": "%s"}`, token)
+	fmt.Fprintf(w, `{"token": "%s", "userId": "%s"}`, token, user.UserId)
 }
 
 type Bracket struct {
@@ -176,7 +175,7 @@ func bracketHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error encoding JSON", http.StatusInternalServerError)
 		return
 	}
-
+	log.Printf("Response: %s", responseJSON)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(responseJSON)
 }
