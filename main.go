@@ -7,8 +7,7 @@ import (
 	"net/http"
 	"time"
 	"strings"
-
-        "github.com/dgrijalva/jwt-go"
+    "github.com/dgrijalva/jwt-go"
 	"github.com/rs/cors"
 )
 
@@ -33,11 +32,9 @@ type CustomClaims struct {
 }
 
 func main() {
-	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/signup", signUpHandler)
 	mux.HandleFunc("/v1/login", loginHandler)
-	mux.HandleFunc("/v1/brackets", bracketHandler)
-
+	mux.HandleFunc("/v1/brackets/{id}", bracketHandler)
 
 	handler := cors.Default().Handler(mux)
 
@@ -70,22 +67,32 @@ type UserDBRecord struct {
 	Email string
 }
 
-func getUsers(email string) *UserDBRecord {
-	users := []UserDBRecord{
-		{
-			UserId: "1",
-			Name: "Brian Sip",
-			Email: "bsipin@gmail.com",
-			Password: "password123",
-		},
-		{
-			UserId: "2",
-			Name: "Frina",
-			Email: "frinalin@gmail.com",
-			Password: "password",
-		},
+var GlobalUsers = []UserDBRecord{
+	{
+		UserId: "1",
+		Name: "Brian Sip",
+		Password: "password123",
+		Email: "bsipin@gmail.com",
+	},
+	{
+		UserId: "2",
+		Name: "Frina",
+		Password: "password",
+		Email: "frina.lin@gmail.com",
+	},
+}
+
+func getUserById(userId string) *UserDBRecord {
+	for _, user := range GlobalUsers {
+		if user.UserId == userId {
+			return &user
+		}
 	}
-	for _, user := range users {
+	return nil
+}
+
+func getUsersByEmail(email string) *UserDBRecord {
+	for _, user := range GlobalUsers {
 		if user.Email == email {
 			return &user
 		}
@@ -93,36 +100,40 @@ func getUsers(email string) *UserDBRecord {
 	return nil
 }
 			
-
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	var user UserLogin
-	err := json.NewDecoder(r.Body).Decode(&user)
+	var loginInfo UserLogin
+	err := json.NewDecoder(r.Body).Decode(&loginInfo)
 	if err != nil {
 		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
 		return
 	}
-	log.Printf("Request %+v", user)
+	log.Printf("Request %+v", loginInfo.Username)
 
-	if user.Username != "testuser@gmail.com" || user.Password != "testpassword" {
-		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
-		return
+	//if loginInfo.Username != "testuser@gmail.com" || loginInfo.Password != "testpassword" {
+   	//	http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+    // 	return
+	//}
+	user := getUsersByEmail(loginInfo.Username)
+
+	if user == nil {
+		fmt.Fprint(w, "User not found")
 	}
 
-	token, err := generateJWT(user.Username)
+	token, err := generateJWT(user.UserId)
 
-	if err != nil {
-		http.Error(w, "Error generating JWT token", http.StatusInternalServerError)
-		return
-	}
+	//if err != nil {
+    //		http.Error(w, "Error generating JWT token", http.StatusInternalServerError)
+// 		return
+//}
 	log.Printf("Token: %+v", token)
 
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, `{"token": "%s"}`, token)
+    w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, `{"token": "%s", "userId": "%s"}`, token, user.UserId)
 }
 
 type Bracket struct {
@@ -164,7 +175,7 @@ func bracketHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error encoding JSON", http.StatusInternalServerError)
 		return
 	}
-
+	log.Printf("Response: %s", responseJSON)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(responseJSON)
 }

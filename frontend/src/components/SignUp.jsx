@@ -1,7 +1,8 @@
 import React, {useState , useEffect} from 'react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { Link } from 'react-router-dom';
+import { Link, redirect } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 import { validate } from './validate';
@@ -20,7 +21,7 @@ const SignUp = () => {
     });
     const [errors , setErrors] = useState({});
     const [touched , setTouched] = useState({});
-
+	const navigate = useNavigate();
 
     useEffect(() => {
         setErrors(validate(data , "signup"))
@@ -60,10 +61,11 @@ const SignUp = () => {
             const response = await fetch(`http://localhost:8080/v1/signup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ "username": data.username, "password": data.password, "name": data.name}),
+                body: JSON.stringify({ "username": data.username, "password": data.password, "name": data.name, "email": data.email, "isAccepted": data.isAccepted}),
             })
-            console.log(response)
-
+			if (response.ok) {
+				return navigate("/login");
+			}
         } catch (error) {
             console.error('Error posting data:', error);
         }

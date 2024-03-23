@@ -15,9 +15,12 @@ const Dashboard = () => {
                     setError('No token available');
                     return;
                 }
+				const userId = localStorage.getItem('userId');
 
-                const response = await axios.get('/brackets', {
+                const response = await axios.get(`http://localhost:8080/v1/brackets/${userId}`, {
+				    method: 'GET',
                     headers: {
+						headers: { 'Content-Type': 'application/json' },
                         Authorization: `Bearer ${token}`,
                     },
                 });
@@ -38,7 +41,7 @@ const Dashboard = () => {
             ) : (
                 <ul>
                     {brackets.map((bracket, index) => (
-                        <li key={index}>{bracket.name}</li>
+                        <li key={index}>{bracket.Name}</li>
                     ))}
                 </ul>
             )}
