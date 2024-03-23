@@ -5,6 +5,8 @@ import { Link } from 'react-router-dom';
 
 import { validate } from './validate';
 import  {notify} from './toast';
+import { useNavigate } from 'react-router-dom';
+
 import styles from './SignUp.module.css';
 
 const Login = () => {
@@ -15,7 +17,7 @@ const Login = () => {
     const [errors , setErrors] = useState({});
     const [touched , setTouched] = useState({});
     const [token, setToken] = useState(null);
-
+	const navigate = useNavigate();
 
     useEffect(() => {
         setErrors(validate(data , "login"))
@@ -58,6 +60,7 @@ const Login = () => {
                 localStorage.setItem('authToken', jwtToken);
 				localStorage.setItem('userId', responseData.userId);
                 window.location.href = '/dashboard';
+				//return navigate('/dashboard');
             } else {
                 setErrors('Invalid credentials');
             }

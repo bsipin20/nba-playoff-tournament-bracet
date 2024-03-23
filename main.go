@@ -8,6 +8,7 @@ import (
 	"time"
 	"strings"
     "github.com/dgrijalva/jwt-go"
+	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 )
 
@@ -24,6 +25,8 @@ type UserLogin struct {
 	Password string `json:"password"`
 }
 
+var secretKey = []byte("your_secret_key")
+
 // CustomClaims represents custom claims for the JWT token
 type CustomClaims struct {
 	Username string `json:"username"`
@@ -32,14 +35,20 @@ type CustomClaims struct {
 }
 
 func main() {
-	mux.HandleFunc("/v1/signup", signUpHandler)
-	mux.HandleFunc("/v1/login", loginHandler)
-	mux.HandleFunc("/v1/brackets/{id}", bracketHandler)
+	router := mux.NewRouter()
 
-	handler := cors.Default().Handler(mux)
+    router.HandleFunc("/v1/signup", signUpHandler).Methods("POST")
+    router.HandleFunc("/v1/login", loginHandler).Methods("POST")
+	router.HandleFunc("/v1/brackets/{id}", bracketHandler).Methods("GET")
 
-	fmt.Println("Server is listening on :8080")
-	http.ListenAndServe(":8080", handler)
+
+    c := cors.New(cors.Options{
+        AllowedOrigins: []string{"http://localhost:5173"},
+        AllowCredentials: true,
+    })
+
+    handler := c.Handler(router)
+    log.Fatal(http.ListenAndServe(":8080", handler))
 }
 
 func signUpHandler(w http.ResponseWriter, r *http.Request) {
@@ -99,7 +108,46 @@ func getUsersByEmail(email string) *UserDBRecord {
 	}
 	return nil
 }
-			
+
+func handleLogin(w http.ResponseWriter, r *http.Request) {
+	// Sample user credentials (you might fetch this from a database)
+	validUser := User{
+		ID:       "1",
+		Username: "user",
+		Password: "password",
+	}
+
+	// Decode request body to get user credentials
+	var userCreds User
+	err := json.NewDecoder(r.Body).Decode(&userCreds)
+	if err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	// Check if user credentials are valid
+	if userCreds.Username != validUser.Username || userCreds.Password != validUser.Password {
+		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+		return
+	}
+
+	// Generate JWT token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"userID": validUser.ID,
+		"exp":    time.Now().Add(time.Hour * 24).Unix(), // Token expires in 24 hours
+	})
+
+	tokenString, err := token.SignedString(secretKey)
+	if err != nil {
+		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		return
+	}
+
+	// Send the token in the response
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
+}
+
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -114,10 +162,6 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("Request %+v", loginInfo.Username)
 
-	//if loginInfo.Username != "testuser@gmail.com" || loginInfo.Password != "testpassword" {
-   	//	http.Error(w, "Invalid username or password", http.StatusUnauthorized)
-    // 	return
-	//}
 	user := getUsersByEmail(loginInfo.Username)
 
 	if user == nil {
@@ -126,10 +170,6 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	token, err := generateJWT(user.UserId)
 
-	//if err != nil {
-    //		http.Error(w, "Error generating JWT token", http.StatusInternalServerError)
-// 		return
-//}
 	log.Printf("Token: %+v", token)
 
     w.WriteHeader(http.StatusOK)
@@ -140,29 +180,22 @@ type Bracket struct {
 	Name string `json:"name"`
 }
 
+// CustomClaims struct to parse JWT claims
+type ValidCustomClaims struct {
+    UserId string `json:"user_id"`
+    jwt.StandardClaims
+}
+
+func extractUserIDFromPath(path string) string {
+    parts := strings.Split(path, "/")
+    if len(parts) < 3 {
+        return ""
+    }
+    return parts[len(parts)-1]
+}
+
+
 func bracketHandler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("request body: %s", r.Header)
-
-
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	tokenHeader := r.Header.Get("Authorization")
-	if tokenHeader == "" {
-		http.Error(w, "Authorization header missing", http.StatusUnauthorized)
-		return
-	}
-
-	if !strings.HasPrefix(tokenHeader, "Bearer ") {
-		http.Error(w, "Invalid Authorization header format", http.StatusUnauthorized)
-		return
-	}
-
-	token := strings.TrimPrefix(tokenHeader, "Bearer ")
-
-	log.Printf("Bearer token in request: %s", token)
 
 	brackets := []Bracket{
 		{Name: "brians-bracket"},
